@@ -1,106 +1,141 @@
--- Надежный скрипт полета через CFrame
+-- Простой и эффективный ESP для MM2
 local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
 
-local player = Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
-local humanoid = character:WaitForChild("Humanoid")
+-- Настройки ESP
+local espSettings = {
+    Enabled = true,
+    BoxColor = Color3.fromRGB(255, 0, 0), -- Красный для всех
+    ShowName = true,
+    ShowDistance = true,
+    MaxDistance = 1000
+}
 
--- Настройки
-local flying = false
-local speed = 50
-local guiEnabled = true
+-- Таблица для хранения объектов ESP
+local espObjects = {}
 
--- Создание GUI
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "FlyGuiFixed"
-screenGui.ResetOnSpawn = false
-screenGui.Parent = player.PlayerGui
+-- Функция создания ESP для игрока
+local function createESP(player)
+    if player == LocalPlayer then return end
+    
+    local character = player.Character
+    if not character then return end
+    
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return end
+    
+    -- Создаем BillboardGui (текст над головой)
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "ESP_Billboard"
+    billboard.Size = UDim2.new(0, 200, 0, 50)
+    billboard.StudsOffset = Vector3.new(0, 2.5, 0)
+    billboard.AlwaysOnTop = true
+    billboard.Parent = humanoidRootPart
+    
+    -- Текст с именем
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.Name = "NameLabel"
+    nameLabel.Size = UDim2.new(1, 0, 0.5, 0)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    nameLabel.TextStrokeTransparency = 0
+    nameLabel.TextSize = 16
+    nameLabel.Font = Enum.Font.GothamBold
+    nameLabel.Parent = billboard
+    
+    -- Текст с дистанцией
+    local distLabel = Instance.new("TextLabel")
+    distLabel.Name = "DistLabel"
+    distLabel.Size = UDim2.new(1, 0, 0.5, 0)
+    distLabel.Position = UDim2.new(0, 0, 0.5, 0)
+    distLabel.BackgroundTransparency = 1
+    distLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    distLabel.TextStrokeTransparency = 0
+    distLabel.TextSize = 14
+    distLabel.Font = Enum.Font.Gotham
+    distLabel.Parent = billboard
+    
+    -- Сохраняем ссылки
+    espObjects[player.UserId] = {
+        Billboard = billboard,
+        NameLabel = nameLabel,
+        DistLabel = distLabel,
+        RootPart = humanoidRootPart
+    }
+end
 
-local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 200, 0, 100)
-frame.Position = UDim2.new(0, 10, 0, 10)
-frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-frame.BackgroundTransparency = 0.2
-frame.BorderSizePixel = 0
-frame.Parent = screenGui
-
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 30)
-title.BackgroundTransparency = 1
-title.Text = "✈️ Fly Fixed"
-title.TextColor3 = Color3.fromRGB(255, 255, 255)
-title.TextSize = 18
-title.Font = Enum.Font.GothamBold
-title.Parent = frame
-
-local flyButton = Instance.new("TextButton")
-flyButton.Size = UDim2.new(1, -20, 0, 40)
-flyButton.Position = UDim2.new(0, 10, 0, 35)
-flyButton.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-flyButton.Text = "Включить полет"
-flyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-flyButton.TextSize = 16
-flyButton.Font = Enum.Font.GothamBold
-flyButton.Parent = frame
-
--- Логика кнопки
-flyButton.MouseButton1Click:Connect(function()
-    flying = not flying
-    if flying then
-        flyButton.Text = "Выключить полет"
-        flyButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-        humanoid.PlatformStand = true -- Отключаем ходьбу
-    else
-        flyButton.Text = "Включить полет"
-        flyButton.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-        humanoid.PlatformStand = false
+-- Функция удаления ESP
+local function removeESP(player)
+    if espObjects[player.UserId] then
+        local esp = espObjects[player.UserId]
+        if esp.Billboard then esp.Billboard:Destroy() end
+        espObjects[player.UserId] = nil
     end
-end)
+end
 
--- Основной цикл полета
+-- Обновление ESP каждый кадр
 RunService.RenderStepped:Connect(function()
-    if not flying then return end
-    
-    local camera = workspace.CurrentCamera
-    local moveDirection = Vector3.new(0, 0, 0)
-    
-    -- Получаем векторы камеры
-    local lookVector = camera.CFrame.LookVector
-    local rightVector = camera.CFrame.RightVector
-    
-    -- WASD
-    if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-        moveDirection = moveDirection + lookVector
-    end
-    if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-        moveDirection = moveDirection - lookVector
-    end
-    if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-        moveDirection = moveDirection - rightVector
-    end
-    if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-        moveDirection = moveDirection + rightVector
+    if not espSettings.Enabled then
+        for _, esp in pairs(espObjects) do
+            if esp.Billboard then esp.Billboard.Enabled = false end
+        end
+        return
     end
     
-    -- Вверх/Вниз
-    if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-        moveDirection = moveDirection + Vector3.new(0, 1, 0)
+    for player, esp in pairs(espObjects) do
+        if player.Character and esp.RootPart then
+            local distance = (LocalPlayer.Character.HumanoidRootPart.Position - esp.RootPart.Position).Magnitude
+            
+            if distance < espSettings.MaxDistance then
+                esp.Billboard.Enabled = true
+                
+                -- Обновляем текст
+                if espSettings.ShowName then
+                    esp.NameLabel.Text = player.Name
+                else
+                    esp.NameLabel.Text = ""
+                end
+                
+                if espSettings.ShowDistance then
+                    esp.DistLabel.Text = string.format("%.1f studs", distance)
+                else
+                    esp.DistLabel.Text = ""
+                end
+                
+                -- Меняем цвет в зависимости от расстояния (опционально)
+                if distance < 20 then
+                    esp.NameLabel.TextColor3 = Color3.fromRGB(255, 0, 0) -- Близко - красный
+                else
+                    esp.NameLabel.TextColor3 = Color3.fromRGB(255, 255, 255) -- Далеко - белый
+                end
+            else
+                esp.Billboard.Enabled = false
+            end
+        else
+            esp.Billboard.Enabled = false
+        end
     end
-    if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
-        moveDirection = moveDirection - Vector3.new(0, 1, 0)
-    end
-    
-    -- Применяем движение напрямую к CFrame
-    if moveDirection.Magnitude > 0 then
-        moveDirection = moveDirection.Unit * (speed / 10) -- Делим на 10 для плавности
-        humanoidRootPart.CFrame = humanoidRootPart.CFrame + moveDirection
-    end
-    
-    -- Поворачиваем персонажа лицом к камере (опционально)
-    -- humanoidRootPart.CFrame = CFrame.new(humanoidRootPart.Position, humanoidRootPart.Position + lookVector)
 end)
 
-print("✅ Исправленный скрипт полета запущен!")
+-- Подключение к новым игрокам
+Players.PlayerAdded:Connect(createESP)
+Players.PlayerRemoving:Connect(removeESP)
+
+-- Создаем ESP для уже существующих игроков
+for _, player in pairs(Players:GetPlayers()) do
+    createESP(player)
+end
+
+-- Следим за появлением персонажей
+Players.LocalPlayer.CharacterAdded:Connect(function(char)
+    wait(1) -- Ждем загрузки
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            removeESP(player)
+            createESP(player)
+        end
+    end
+end)
+
+print("✅ ESP для MM2 загружен!")

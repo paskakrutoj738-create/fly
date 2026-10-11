@@ -1,24 +1,25 @@
--- Delta Roblox Mobile: Fly + Wall Hack
--- For mobile executors
+-- MM2 Full Cheat
+-- Kill All, Coins, ESP, Fly, Speed, Godmode, Auto-Win
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- ===== GUI =====
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "DeltaMobile"
+screenGui.Name = "MM2Cheat"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
-local function makeButton(text, pos)
+local function makeButton(text, pos, color)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0, 120, 0, 50)
+    btn.Size = UDim2.new(0, 140, 0, 45)
     btn.Position = pos
-    btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    btn.BackgroundTransparency = 0.3
+    btn.BackgroundColor3 = color or Color3.fromRGB(30, 30, 30)
+    btn.BackgroundTransparency = 0.2
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.Text = text
     btn.TextScaled = true
@@ -26,173 +27,112 @@ local function makeButton(text, pos)
     btn.Parent = screenGui
 
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 10)
+    corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = btn
 
     return btn
 end
 
-local flyBtn = makeButton("FLY: OFF", UDim2.new(0, 20, 0, 100))
-local whBtn = makeButton("WH: OFF", UDim2.new(0, 20, 0, 170))
+local killAllBtn = makeButton("KILL ALL", UDim2.new(0, 20, 0, 100), Color3.fromRGB(180, 20, 20))
+local coinsBtn = makeButton("COINS", UDim2.new(0, 20, 0, 155), Color3.fromRGB(200, 160, 0))
+local espBtn = makeButton("ESP: OFF", UDim2.new(0, 20, 0, 210))
+local flyBtn = makeButton("FLY: OFF", UDim2.new(0, 20, 0, 265))
+local speedBtn = makeButton("SPEED: OFF", UDim2.new(0, 20, 0, 320))
+local godBtn = makeButton("GOD: OFF", UDim2.new(0, 20, 0, 375))
+local winBtn = makeButton("AUTO WIN", UDim2.new(0, 20, 0, 430), Color3.fromRGB(20, 150, 20))
 
--- ===== FLY =====
-local flyEnabled = false
-local flySpeed = 60
-local flyBodyVelocity
-local flyBodyGyro
-local moveDir = Vector3.zero
-
-local function startFly()
-    if flyEnabled then return end
-    flyEnabled = true
-    flyBtn.Text = "FLY: ON"
-
-    local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-    local hrp = char:WaitForChild("HumanoidRootPart")
-
-    flyBodyVelocity = Instance.new("BodyVelocity")
-    flyBodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-    flyBodyVelocity.Velocity = Vector3.zero
-    flyBodyVelocity.Parent = hrp
-
-    flyBodyGyro = Instance.new("BodyGyro")
-    flyBodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
-    flyBodyGyro.P = 9e4
-    flyBodyGyro.CFrame = hrp.CFrame
-    flyBodyGyro.Parent = hrp
-end
-
-local function stopFly()
-    flyEnabled = false
-    flyBtn.Text = "FLY: OFF"
-    moveDir = Vector3.zero
-    if flyBodyVelocity then flyBodyVelocity:Destroy() end
-    if flyBodyGyro then flyBodyGyro:Destroy() end
-end
-
-RunService.RenderStepped:Connect(function()
-    if not flyEnabled then return end
-    local camCF = Camera.CFrame
-    local dir = Vector3.zero
-
-    if moveDir.Magnitude > 0 then
-        dir = camCF:VectorToWorldSpace(moveDir)
+-- ===== KILL ALL =====
+killAllBtn.MouseButton1Click:Connect(function()
+    local char = LocalPlayer.Character
+    if not char then return end
+    local tool = char:FindFirstChildOfClass("Tool")
+    if not tool then
+        local backpack = LocalPlayer:FindFirstChild("Backpack")
+        if backpack then
+            for _, item in ipairs(backpack:GetChildren()) do
+                if item:IsA("Tool") and item.Name:lower():find("knife") then
+                    item.Parent = char
+                    tool = item
+                    break
+                end
+            end
+        end
     end
 
-    if flyBodyVelocity then
-        flyBodyVelocity.Velocity = dir * flySpeed
-    end
-    if flyBodyGyro then
-        flyBodyGyro.CFrame = camCF
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character then
+            local target = plr.Character:FindFirstChild("HumanoidRootPart")
+            if target then
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    hrp.CFrame = target.CFrame * CFrame.new(0, 0, 2)
+                    task.wait(0.1)
+                    if tool then
+                        tool:Activate()
+                    end
+                    firetouchinterest = firetouchinterest or function() end
+                    firetouchinterest(hrp, target, 0)
+                    task.wait(0.05)
+                    firetouchinterest(hrp, target, 1)
+                end
+            end
+        end
     end
 end)
 
--- ===== JOYSTICK =====
-local joyActive = false
-local joyStart = Vector2.new(0, 0)
-local joyCenter = UDim2.new(1, -150, 1, -150)
-
-local joyFrame = Instance.new("Frame")
-joyFrame.Size = UDim2.new(0, 200, 0, 200)
-joyFrame.Position = joyCenter
-joyFrame.BackgroundTransparency = 0.7
-joyFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-joyFrame.Parent = screenGui
-
-local joyCorner = Instance.new("UICorner")
-joyCorner.CornerRadius = UDim.new(1, 0)
-joyCorner.Parent = joyFrame
-
-local joyKnob = Instance.new("Frame")
-joyKnob.Size = UDim2.new(0, 80, 0, 80)
-joyKnob.Position = UDim2.new(0.5, -40, 0.5, -40)
-joyKnob.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
-joyKnob.Parent = joyFrame
-
-local knobCorner = Instance.new("UICorner")
-knobCorner.CornerRadius = UDim.new(1, 0)
-knobCorner.Parent = joyKnob
-
-local function updateJoy(input)
-    local delta = input.Position - joyStart
-    local mag = math.min(delta.Magnitude, 100)
-    local unit = delta.Unit
-    if delta.Magnitude == 0 then unit = Vector2.new(0, 0) end
-
-    joyKnob.Position = UDim2.new(0.5, unit.X * mag - 40, 0.5, unit.Y * mag - 40)
-
-    if mag > 10 then
-        moveDir = Vector3.new(unit.X, 0, -unit.Y)
-    else
-        moveDir = Vector3.zero
-    end
-end
-
-joyFrame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.Touch then
-        joyActive = true
-        joyStart = input.Position
+-- ===== COINS =====
+coinsBtn.MouseButton1Click:Connect(function()
+    local char = LocalPlayer.Character
+    if not char then return end
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj.Name == "Coin" or obj.Name == "CoinContainer" then
+            if obj:IsA("BasePart") then
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    hrp.CFrame = obj.CFrame
+                    task.wait(0.05)
+                end
+            end
+        end
     end
 end)
 
-UserInputService.InputChanged:Connect(function(input)
-    if joyActive and input.UserInputType == Enum.UserInputType.Touch then
-        updateJoy(input)
-    end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.Touch then
-        joyActive = false
-        moveDir = Vector3.zero
-        joyKnob.Position = UDim2.new(0.5, -40, 0.5, -40)
-    end
-end)
-
--- ===== UP / DOWN BUTTONS =====
-local upBtn = makeButton("UP", UDim2.new(1, -340, 1, -200))
-local downBtn = makeButton("DOWN", UDim2.new(1, -340, 1, -130))
-
-upBtn.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.Touch then
-        moveDir = moveDir + Vector3.new(0, 1, 0)
-    end
-end)
-upBtn.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.Touch then
-        moveDir = moveDir - Vector3.new(0, 1, 0)
-    end
-end)
-
-downBtn.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.Touch then
-        moveDir = moveDir - Vector3.new(0, 1, 0)
-    end
-end)
-downBtn.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.Touch then
-        moveDir = moveDir + Vector3.new(0, 1, 0)
-    end
-end)
-
-flyBtn.MouseButton1Click:Connect(function()
-    if flyEnabled then stopFly() else startFly() end
-end)
-
--- ===== WALL HACK =====
-local whEnabled = false
+-- ===== ESP =====
+local espEnabled = false
 local highlights = {}
 
-local function applyWH(plr)
+local function clearESP()
+    for _, hl in ipairs(highlights) do
+        hl:Destroy()
+    end
+    highlights = {}
+end
+
+local function applyESP(plr)
     if plr == LocalPlayer then return end
     local char = plr.Character
     if not char then return end
+    local role = "Innocent"
+    local isMurderer = false
+    local isSheriff = false
+
+    local backpack = plr:FindFirstChild("Backpack")
+    if backpack then
+        for _, item in ipairs(backpack:GetChildren()) do
+            if item.Name:lower():find("knife") then isMurderer = true end
+            if item.Name:lower():find("gun") or item.Name:lower():find("revolver") then isSheriff = true end
+        end
+    end
+
+    local color = Color3.fromRGB(0, 255, 0)
+    if isMurderer then color = Color3.fromRGB(255, 0, 0) role = "Murderer" end
+    if isSheriff then color = Color3.fromRGB(0, 100, 255) role = "Sheriff" end
 
     for _, part in ipairs(char:GetDescendants()) do
         if part:IsA("BasePart") then
             local hl = Instance.new("Highlight")
             hl.Adornee = part
-            hl.FillColor = Color3.fromRGB(255, 0, 0)
+            hl.FillColor = color
             hl.OutlineColor = Color3.fromRGB(255, 255, 255)
             hl.FillTransparency = 0.5
             hl.OutlineTransparency = 0
@@ -202,32 +142,127 @@ local function applyWH(plr)
     end
 end
 
-local function startWH()
-    if whEnabled then return end
-    whEnabled = true
-    whBtn.Text = "WH: ON"
+local function startESP()
+    espEnabled = true
+    espBtn.Text = "ESP: ON"
     for _, plr in ipairs(Players:GetPlayers()) do
-        applyWH(plr)
+        applyESP(plr)
     end
-    Players.PlayerAdded:Connect(function(plr)
-        plr.CharacterAdded:Connect(function()
-            wait(1)
-            if whEnabled then applyWH(plr) end
-        end)
-    end)
 end
 
-local function stopWH()
-    whEnabled = false
-    whBtn.Text = "WH: OFF"
-    for _, hl in ipairs(highlights) do
-        hl:Destroy()
-    end
-    highlights = {}
+local function stopESP()
+    espEnabled = false
+    espBtn.Text = "ESP: OFF"
+    clearESP()
 end
 
-whBtn.MouseButton1Click:Connect(function()
-    if whEnabled then stopWH() else startWH() end
+espBtn.MouseButton1Click:Connect(function()
+    if espEnabled then stopESP() else startESP() end
 end)
 
-print("Delta Mobile loaded. FLY / WH buttons + joystick")
+-- ===== FLY =====
+local flyEnabled = false
+local flySpeed = 60
+local flyBV, flyBG
+
+local function startFly()
+    flyEnabled = true
+    flyBtn.Text = "FLY: ON"
+    local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local hrp = char:WaitForChild("HumanoidRootPart")
+
+    flyBV = Instance.new("BodyVelocity")
+    flyBV.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+    flyBV.Velocity = Vector3.zero
+    flyBV.Parent = hrp
+
+    flyBG = Instance.new("BodyGyro")
+    flyBG.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+    flyBG.P = 9e4
+    flyBG.CFrame = hrp.CFrame
+    flyBG.Parent = hrp
+end
+
+local function stopFly()
+    flyEnabled = false
+    flyBtn.Text = "FLY: OFF"
+    if flyBV then flyBV:Destroy() end
+    if flyBG then flyBG:Destroy() end
+end
+
+RunService.RenderStepped:Connect(function()
+    if not flyEnabled then return end
+    local camCF = Camera.CFrame
+    local dir = Vector3.zero
+    if UserInputService:IsKeyDown(Enum.KeyCode.W) then dir = dir + camCF.LookVector end
+    if UserInputService:IsKeyDown(Enum.KeyCode.S) then dir = dir - camCF.LookVector end
+    if UserInputService:IsKeyDown(Enum.KeyCode.A) then dir = dir - camCF.RightVector end
+    if UserInputService:IsKeyDown(Enum.KeyCode.D) then dir = dir + camCF.RightVector end
+    if UserInputService:IsKeyDown(Enum.KeyCode.Space) then dir = dir + Vector3.new(0, 1, 0) end
+    if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then dir = dir - Vector3.new(0, 1, 0) end
+
+    if flyBV then
+        flyBV.Velocity = dir.Magnitude > 0 and dir.Unit * flySpeed or Vector3.zero
+    end
+    if flyBG then
+        flyBG.CFrame = camCF
+    end
+end)
+
+flyBtn.MouseButton1Click:Connect(function()
+    if flyEnabled then stopFly() else startFly() end
+end)
+
+-- ===== SPEED =====
+local speedEnabled = false
+local originalSpeed = 16
+
+local function setSpeed(speed)
+    local char = LocalPlayer.Character
+    if not char then return end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if hum then hum.WalkSpeed = speed end
+end
+
+speedBtn.MouseButton1Click:Connect(function()
+    speedEnabled = not speedEnabled
+    speedBtn.Text = speedEnabled and "SPEED: ON" or "SPEED: OFF"
+    setSpeed(speedEnabled and 80 or originalSpeed)
+end)
+
+-- ===== GODMODE =====
+local godEnabled = false
+
+godBtn.MouseButton1Click:Connect(function()
+    godEnabled = not godEnabled
+    godBtn.Text = godEnabled and "GOD: ON" or "GOD: OFF"
+end)
+
+RunService.Heartbeat:Connect(function()
+    if not godEnabled then return end
+    local char = LocalPlayer.Character
+    if not char then return end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if hum then
+        hum.Health = hum.MaxHealth
+    end
+end)
+
+-- ===== AUTO WIN =====
+winBtn.MouseButton1Click:Connect(function()
+    LocalPlayer.CharacterAdded:Connect(function(char)
+        task.wait(2)
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then hum.Health = hum.MaxHealth end
+    end)
+
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer then
+            pcall(function()
+                plr.Character:BreakJoints()
+            end)
+        end
+    end
+end)
+
+print("MM2 Full Cheat loaded.")
